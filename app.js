@@ -12,30 +12,49 @@ const savedTheme = localStorage.getItem('theme') || 'light';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
 // Si tienes el checkbox en el HTML, asegúrate de que se marque correctamente
-window.addEventListener('DOMContentLoaded', () => {
-    const themeSwitch = document.getElementById('theme-switch');
-    if (themeSwitch) {
-        themeSwitch.checked = (savedTheme === 'dark');
-    }
+window.addEventListener('DOMContentLoaded', async () => {
+  // Aplicar tema guardado
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  const themeSwitch = document.getElementById('theme-switch');
+  if (themeSwitch) themeSwitch.checked = (savedTheme === 'dark');
+
+  // Cargar la última pestaña visitada o por defecto 'facturas'
+  const lastTab = localStorage.getItem('activeTab') || 'facturas';
+
+  // Un pequeño truco: si la pestaña era un formulario, mejor vuelve al listado
+  if (lastTab.includes('form')) {
+      showTab('facturas');
+  } else {
+      showTab(lastTab);
+  }
 });
 
 // Navegación entre pestañas
 // Actualiza tu función showTab para cargar el perfil cuando se entre en ⚙️
 // Sustituye la parte de la navegación por esta:
 function showTab(tabId) {
+  // 1. Guardar la pestaña actual para el futuro
+  localStorage.setItem('activeTab', tabId);
+
+  // 2. Ocultar todas
   document.querySelectorAll('.tab-content').forEach(tab => {
       tab.classList.remove('active');
       tab.style.display = 'none';
   });
 
+  // 3. Mostrar la actual
   const activeTab = document.getElementById(`tab-${tabId}`);
-  activeTab.classList.add('active');
-  activeTab.style.display = 'block';
+  if (activeTab) {
+      activeTab.classList.add('active');
+      activeTab.style.display = 'block';
+  }
 
+  // 4. Cargar datos automáticamente
+  if (tabId === 'facturas') renderFacturas();
   if (tabId === 'clientes') renderClientes();
   if (tabId === 'gastos') renderGastos();
-  if (tabId === 'config') cargarPerfil(); // <--- NUEVO
-  if (tabId === 'facturas') renderFacturas();
+  if (tabId === 'config') cargarPerfil();
 }
 
 // Y al final de app.js, llama a cargarPerfil para inicializarlo
