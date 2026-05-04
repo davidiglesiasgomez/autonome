@@ -131,7 +131,13 @@
                 </label>
             </article>
             <hr>
-            <button class="secondary" onclick="exportarTodo()">📤 Exportar Backup Total (JSON)</button>
+            <div class="grid">
+                <button class="secondary" onclick="exportarTodo()">📤 Exportar Todo</button>
+
+                <!-- Input oculto para seleccionar el archivo -->
+                <input type="file" id="import-file" style="display:none" accept=".json" onchange="importarTodo(this)">
+                <button class="secondary" onclick="document.getElementById('import-file').click()">📥 Importar Todo</button>
+            </div>
         </section>
     </main>
 
