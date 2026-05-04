@@ -48,6 +48,54 @@
             </table>
         </section>
 
+        <!-- PESTAÑA: GASTOS -->
+        <section id="tab-gastos" class="tab-content">
+            <header class="grid">
+                <h2>Control de Gastos</h2>
+                <button onclick="showTab('form-gasto')"> + Registrar Gasto</button>
+            </header>
+            <table role="grid">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Concepto</th>
+                        <th>Categoría</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-gastos"></tbody>
+            </table>
+        </section>
+
+        <!-- PESTAÑA: FORMULARIO GASTO -->
+        <section id="tab-form-gasto" class="tab-content">
+            <h2>Nuevo Gasto / Compra</h2>
+            <form id="form-gasto">
+                <div class="grid">
+                    <label>Fecha <input type="date" id="g-fecha" required></label>
+                    <label>Categoría
+                        <select id="g-categoria">
+                            <option value="Suministros">Suministros (Luz, Internet...)</option>
+                            <option value="Software">Software/Suscripciones</option>
+                            <option value="Material">Material de oficina</option>
+                            <option value="Alquiler">Alquiler / Coworking</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </label>
+                </div>
+                <label>Concepto <input type="text" id="g-concepto" placeholder="Ej: Factura Movistar" required></label>
+                <div class="grid">
+                    <label>Base Imponible (€) <input type="number" id="g-base" step="0.01" required></label>
+                    <label>IVA (%) <input type="number" id="g-iva" value="21" step="1"></label>
+                </div>
+                <div class="grid">
+                    <button type="submit">Guardar Gasto</button>
+                    <button type="button" class="secondary" onclick="showTab('gastos')">Cancelar</button>
+                </div>
+            </form>
+        </section>
+
         <!-- PESTAÑA: FORMULARIO CLIENTE (Separado) -->
         <section id="tab-form-cliente" class="tab-content">
             <h2>Nuevo Cliente</h2>

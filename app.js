@@ -15,7 +15,7 @@ function showTab(tabId) {
     });
     // Mostrar la seleccionada
     document.getElementById(`tab-${tabId}`).classList.add('active');
-    
+
     // Si la pestaña tiene una función de carga, ejecutarla
     if(tabId === 'clientes') renderClientes();
 }
@@ -25,7 +25,7 @@ const formCliente = document.getElementById('form-cliente');
 
 formCliente.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const nuevoCliente = {
         id: crypto.randomUUID(), // Identificador único universal
         nombre: document.getElementById('c-nombre').value,
@@ -85,3 +85,55 @@ async function exportarTodo() {
     a.download = 'autonome_backup.json';
     a.click();
 }
+
+// --- GESTIÓN DE GASTOS ---
+const formGasto = document.getElementById('form-gasto');
+
+formGasto.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const nuevoGasto = {
+        id: crypto.randomUUID(),
+        fecha: document.getElementById('g-fecha').value,
+        categoria: document.getElementById('g-categoria').value,
+        concepto: document.getElementById('g-concepto').value,
+        base: parseFloat(document.getElementById('g-base').value),
+        iva: parseFloat(document.getElementById('g-iva').value)
+    };
+
+    await db.gastos.add(nuevoGasto);
+    formGasto.reset();
+    showTab('gastos');
+});
+
+async function renderGastos() {
+    const todos = await db.gastos.orderBy('fecha').reverse().toArray();
+    const cuerpo = document.getElementById('lista-gastos');
+    cuerpo.innerHTML = todos.map(g => {
+        const total = (g.base * (1 + g.iva/100)).toFixed(2);
+        return `
+            <tr>
+                <td>${g.fecha}</td>
+                <td>${g.concepto}</td>
+                <td><mark>${g.categoria}</mark></td>
+                <td><strong>${total}€</strong></td>
+                <td>
+                    <button class="outline secondary" onclick="borrarGasto('${g.id}')">🗑️</button>
+                </td>
+            </tr>`;
+    }).join('');
+}
+
+async function borrarGasto(id) {
+    if(confirm('¿Borrar este gasto?')) {
+        await db.gastos.delete(id);
+        renderGastos();
+    }
+}
+
+// Actualizamos la función showTab para que cargue los gastos al entrar
+const originalShowTab = showTab;
+showTab = function(tabId) {
+    originalShowTab(tabId);
+    if(tabId === 'gastos') renderGastos();
+};
