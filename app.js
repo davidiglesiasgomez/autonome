@@ -8,22 +8,26 @@ db.version(1).stores({
 });
 
 // 2. Navegación entre pestañas
+// Actualiza tu función showTab para cargar el perfil cuando se entre en ⚙️
+// Sustituye la parte de la navegación por esta:
 function showTab(tabId) {
-    // 1. Ocultar todas las secciones
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-        tab.style.display = 'none'; // Aseguramos que se oculten
-    });
+  document.querySelectorAll('.tab-content').forEach(tab => {
+      tab.classList.remove('active');
+      tab.style.display = 'none';
+  });
 
-    // 2. Mostrar la seleccionada
-    const activeTab = document.getElementById(`tab-${tabId}`);
-    activeTab.classList.add('active');
-    activeTab.style.display = 'block';
+  const activeTab = document.getElementById(`tab-${tabId}`);
+  activeTab.classList.add('active');
+  activeTab.style.display = 'block';
 
-    // 3. Cargar datos según la pestaña
-    if (tabId === 'clientes') renderClientes();
-    if (tabId === 'gastos') renderGastos();
+  if (tabId === 'clientes') renderClientes();
+  if (tabId === 'gastos') renderGastos();
+  if (tabId === 'config') cargarPerfil(); // <--- NUEVO
+  if (tabId === 'facturas') renderFacturas();
 }
+
+// Y al final de app.js, llama a cargarPerfil para inicializarlo
+cargarPerfil();
 
 // 4. Modo Claro/Oscuro
 function toggleTheme() {
@@ -285,22 +289,88 @@ async function cargarPerfil() {
     }
 }
 
-// Actualiza tu función showTab para cargar el perfil cuando se entre en ⚙️
-// Sustituye la parte de la navegación por esta:
-function showTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-        tab.style.display = 'none';
-    });
+// --- GESTIÓN DE FACTURAS ---
+const formFactura = document.getElementById('form-factura');
 
-    const activeTab = document.getElementById(`tab-${tabId}`);
-    activeTab.classList.add('active');
-    activeTab.style.display = 'block';
+// 1. Rellenar el selector de clientes cuando se abre el formulario
+async function prepararNuevaFactura() {
+    formFactura.reset();
+    document.getElementById('f-id-edit').value = "";
 
-    if (tabId === 'clientes') renderClientes();
-    if (tabId === 'gastos') renderGastos();
-    if (tabId === 'config') cargarPerfil(); // <--- NUEVO
+    const clientes = await db.clientes.toArray();
+    const select = document.getElementById('f-cliente-select');
+
+    select.innerHTML = '<option value="">-- Selecciona un cliente --</option>' +
+        clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+    showTab('form-factura');
 }
 
-// Y al final de app.js, llama a cargarPerfil para inicializarlo
-cargarPerfil();
+// 2. Cálculo automático de totales mientras escribes
+function calcularTotalesFactura() {
+    const base = parseFloat(document.getElementById('f-base').value) || 0;
+    const iva = parseFloat(document.getElementById('f-iva').value) || 0;
+    const irpf = parseFloat(document.getElementById('f-irpf').value) || 0;
+
+    const cuotaIva = base * (iva / 100);
+    const cuotaIrpf = base * (irpf / 100);
+    const total = base + cuotaIva - cuotaIrpf;
+
+    document.getElementById('f-total-display').innerText = total.toFixed(2) + " €";
+}
+
+document.getElementById('f-base').addEventListener('input', calcularTotalesFactura);
+document.getElementById('f-iva').addEventListener('input', calcularTotalesFactura);
+document.getElementById('f-irpf').addEventListener('input', calcularTotalesFactura);
+
+// 3. Guardar Factura con SNAPSHOT
+formFactura.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const clienteId = document.getElementById('f-cliente-select').value;
+    const clienteOriginal = await db.clientes.get(clienteId);
+    const miPerfil = await db.config.get('mi-perfil');
+
+    if (!miPerfil) {
+        alert("Primero debes rellenar tus datos en Configuración");
+        return;
+    }
+
+    const facturaData = {
+        id: document.getElementById('f-id-edit').value || crypto.randomUUID(),
+        numero: document.getElementById('f-numero').value,
+        fecha: document.getElementById('f-fecha').value,
+        concepto: document.getElementById('f-concepto').value,
+        base: parseFloat(document.getElementById('f-base').value),
+        iva: parseFloat(document.getElementById('f-iva').value),
+        irpf: parseFloat(document.getElementById('f-irpf').value),
+
+        // CONGELAMOS DATOS DEL CLIENTE
+        cliente_snapshot: { ...clienteOriginal },
+
+        // CONGELAMOS DATOS DEL EMISOR (TU)
+        emisor_snapshot: { ...miPerfil }
+    };
+
+    await db.facturas.put(facturaData);
+    showTab('facturas');
+});
+
+async function renderFacturas() {
+    const todas = await db.facturas.orderBy('fecha').reverse().toArray();
+    const cuerpo = document.getElementById('lista-facturas');
+
+    cuerpo.innerHTML = todas.map(f => {
+        const total = (f.base * (1 + f.iva/100) - (f.base * f.irpf/100)).toFixed(2);
+        return `
+            <tr>
+                <td>${f.numero}</td>
+                <td>${f.cliente_snapshot.nombre}</td>
+                <td><strong>${total}€</strong></td>
+                <td>
+                    <button class="outline" onclick="exportarPDF('${f.id}')">📄 PDF</button>
+                    <button class="outline secondary" onclick="borrarFactura('${f.id}')">🗑️</button>
+                </td>
+            </tr>`;
+    }).join('');
+}

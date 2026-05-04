@@ -27,7 +27,7 @@
         <!-- PESTAÑA: FACTURAS -->
         <section id="tab-facturas" class="tab-content active">
             <h2>Facturas</h2>
-            <button class="contrast"> + Nueva Factura</button>
+            <button class="contrast" onclick="prepararNuevaFactura()"> + Nueva Factura</button>
             <table>
                 <thead>
                     <tr><th>Nº</th><th>Cliente</th><th>Total</th><th>Acciones</th></tr>
@@ -161,6 +161,47 @@
                 <input type="checkbox" id="theme-switch" role="switch" onclick="toggleTheme()">
                 Modo Oscuro
             </label>
+        </section>
+
+        <!-- PESTAÑA: FORMULARIO FACTURA -->
+        <section id="tab-form-factura" class="tab-content">
+            <h2>Nueva Factura</h2>
+            <form id="form-factura">
+                <input type="hidden" id="f-id-edit">
+
+                <div class="grid">
+                    <label>Nº Factura <input type="text" id="f-numero" placeholder="2024-001" required></label>
+                    <label>Fecha <input type="date" id="f-fecha" required></label>
+                </div>
+
+                <label>Cliente
+                    <select id="f-cliente-select" required>
+                        <option value="">-- Selecciona un cliente --</option>
+                    </select>
+                </label>
+
+                <label>Concepto / Servicios
+                    <textarea id="f-concepto" placeholder="Desarrollo de software, Consultoría..." required></textarea>
+                </label>
+
+                <div class="grid">
+                    <label>Base Imponible (€) <input type="number" id="f-base" step="0.01" value="0.00" required></label>
+                    <label>IVA (%) <input type="number" id="f-iva" value="21"></label>
+                    <label>IRPF (%) <input type="number" id="f-irpf" value="15"></label>
+                </div>
+
+                <article>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Total Factura:</span>
+                        <strong id="f-total-display">0.00 €</strong>
+                    </div>
+                </article>
+
+                <div class="grid">
+                    <button type="submit" class="contrast">Guardar Factura</button>
+                    <button type="button" class="secondary" onclick="showTab('facturas')">Cancelar</button>
+                </div>
+            </form>
         </section>
     </main>
 
