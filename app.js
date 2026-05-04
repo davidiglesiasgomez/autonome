@@ -1,4 +1,4 @@
-// 1. Configuración de la Base de Datos
+// Configuración de la Base de Datos
 const db = new Dexie("AutonoMeDB");
 db.version(1).stores({
     facturas: 'id, numero, fecha, clienteId',
@@ -7,7 +7,19 @@ db.version(1).stores({
     config: 'id'
 });
 
-// 2. Navegación entre pestañas
+// Al principio de app.js
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+// Si tienes el checkbox en el HTML, asegúrate de que se marque correctamente
+window.addEventListener('DOMContentLoaded', () => {
+    const themeSwitch = document.getElementById('theme-switch');
+    if (themeSwitch) {
+        themeSwitch.checked = (savedTheme === 'dark');
+    }
+});
+
+// Navegación entre pestañas
 // Actualiza tu función showTab para cargar el perfil cuando se entre en ⚙️
 // Sustituye la parte de la navegación por esta:
 function showTab(tabId) {
@@ -29,14 +41,17 @@ function showTab(tabId) {
 // Y al final de app.js, llama a cargarPerfil para inicializarlo
 cargarPerfil();
 
-// 4. Modo Claro/Oscuro
+// Modo Claro/Oscuro
 function toggleTheme() {
   const html = document.documentElement;
   const current = html.getAttribute('data-theme');
-  html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+  const target = current === 'light' ? 'dark' : 'light';
+
+  html.setAttribute('data-theme', target);
+  localStorage.setItem('theme', target); // Guardamos la elección
 }
 
-// 5. Backup (Función básica inicial)
+// Backup (Función básica inicial)
 async function exportarTodo() {
   const datos = {
     clientes: await db.clientes.toArray(),
