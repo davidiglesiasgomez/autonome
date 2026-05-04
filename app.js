@@ -9,15 +9,20 @@ db.version(1).stores({
 
 // 2. Navegación entre pestañas
 function showTab(tabId) {
-    // Ocultar todas
+    // 1. Ocultar todas las secciones
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
+        tab.style.display = 'none'; // Aseguramos que se oculten
     });
-    // Mostrar la seleccionada
-    document.getElementById(`tab-${tabId}`).classList.add('active');
 
-    // Si la pestaña tiene una función de carga, ejecutarla
-    if(tabId === 'clientes') renderClientes();
+    // 2. Mostrar la seleccionada
+    const activeTab = document.getElementById(`tab-${tabId}`);
+    activeTab.classList.add('active');
+    activeTab.style.display = 'block';
+
+    // 3. Cargar datos según la pestaña
+    if (tabId === 'clientes') renderClientes();
+    if (tabId === 'gastos') renderGastos();
 }
 
 // 3. Gestión de Clientes (CRUD con UUID)
@@ -130,10 +135,3 @@ async function borrarGasto(id) {
         renderGastos();
     }
 }
-
-// Actualizamos la función showTab para que cargue los gastos al entrar
-const originalShowTab = showTab;
-showTab = function(tabId) {
-    originalShowTab(tabId);
-    if(tabId === 'gastos') renderGastos();
-};
