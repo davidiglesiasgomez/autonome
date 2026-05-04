@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutonoMe - Gestión Local</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        nav { margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+    <nav class="container">
+        <ul><li><strong>🚀 AutonoMe</strong></li></ul>
+        <ul>
+            <li><a href="#" onclick="showTab('facturas')">Facturas</a></li>
+            <li><a href="#" onclick="showTab('clientes')">Clientes</a></li>
+            <li><a href="#" onclick="showTab('gastos')">Gastos</a></li>
+            <li><a href="#" onclick="showTab('config')">⚙️</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <!-- PESTAÑA: FACTURAS -->
+        <section id="tab-facturas" class="tab-content active">
+            <h2>Facturas</h2>
+            <button class="contrast"> + Nueva Factura</button>
+            <table>
+                <thead>
+                    <tr><th>Nº</th><th>Cliente</th><th>Total</th><th>Acciones</th></tr>
+                </thead>
+                <tbody id="lista-facturas"></tbody>
+            </table>
+        </section>
+
+        <!-- PESTAÑA: CLIENTES -->
+        <section id="tab-clientes" class="tab-content">
+            <h2>Gestión de Clientes</h2>
+            <button onclick="showTab('form-cliente')"> + Añadir Cliente</button>
+            <table role="grid">
+                <thead>
+                    <tr><th>Nombre</th><th>NIF</th><th>Acciones</th></tr>
+                </thead>
+                <tbody id="lista-clientes"></tbody>
+            </table>
+        </section>
+
+        <!-- PESTAÑA: FORMULARIO CLIENTE (Separado) -->
+        <section id="tab-form-cliente" class="tab-content">
+            <h2>Nuevo Cliente</h2>
+            <form id="form-cliente">
+                <input type="text" id="c-nombre" placeholder="Nombre Comercial" required>
+                <input type="text" id="c-nif" placeholder="NIF/CIF" required>
+                <input type="email" id="c-email" placeholder="Email de contacto">
+                <textarea id="c-direccion" placeholder="Dirección postal completa"></textarea>
+                <div class="grid">
+                    <button type="submit">Guardar Cliente</button>
+                    <button type="button" class="secondary" onclick="showTab('clientes')">Cancelar</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- PESTAÑA: CONFIGURACIÓN -->
+        <section id="tab-config" class="tab-content">
+            <h2>Configuración</h2>
+            <article>
+                <label for="theme-switch">
+                    <input type="checkbox" id="theme-switch" role="switch" onclick="toggleTheme()">
+                    Modo Oscuro
+                </label>
+            </article>
+            <hr>
+            <button class="secondary" onclick="exportarTodo()">📤 Exportar Backup Total (JSON)</button>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
