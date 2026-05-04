@@ -48,50 +48,85 @@ async function exportarTodo() {
   a.click();
 }
 
+// async function importarTodo(input) {
+//   const file = input.files[0];
+//   if (!file) return;
+
+//   const reader = new FileReader();
+//   reader.onload = async (e) => {
+//       try {
+//           const data = JSON.parse(e.target.result);
+
+//           // Verificación básica de que el archivo es nuestro
+//           if (!data.clientes || !data.gastos) {
+//               throw new Error("El archivo no parece ser un backup válido de AutonoMe.");
+//           }
+
+//           const mensaje = `¿Estás seguro? Se borrarán los datos actuales y se cargarán:\n` +
+//                           `- ${data.clientes.length} Clientes\n` +
+//                           `- ${data.gastos.length} Gastos\n` +
+//                           `- ${data.facturas ? data.facturas.length : 0} Facturas`;
+
+//           if (confirm(mensaje)) {
+//               // Ejecutamos todo en una transacción atómica
+//               await db.transaction('rw', db.clientes, db.gastos, db.facturas, async () => {
+//                   // Limpiar tablas actuales
+//                   await db.clientes.clear();
+//                   await db.gastos.clear();
+//                   await db.facturas.clear();
+
+//                   // Insertar datos del JSON
+//                   if (data.clientes.length) await db.clientes.bulkAdd(data.clientes);
+//                   if (data.gastos.length) await db.gastos.bulkAdd(data.gastos);
+//                   if (data.facturas && data.facturas.length) await db.facturas.bulkAdd(data.facturas);
+//               });
+
+//               alert("¡Datos restaurados con éxito!");
+//               location.reload(); // Recargamos para refrescar todas las tablas
+//           }
+//       } catch (err) {
+//           console.error(err);
+//           alert("Error al importar: " + err.message);
+//       }
+//   };
+//   reader.readAsText(file);
+//   // Limpiar el input para poder volver a subir el mismo archivo si se desea
+//   input.value = '';
+// }
+
+const inputImport = document.getElementById('import-file');
+if (inputImport) {
+    inputImport.addEventListener('change', function() {
+        importarTodo(this);
+    });
+}
+
+// Y asegúrate de que la función esté declarada así:
 async function importarTodo(input) {
-  const file = input.files[0];
-  if (!file) return;
+    const file = input.files[0];
+    if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-      try {
-          const data = JSON.parse(e.target.result);
-
-          // Verificación básica de que el archivo es nuestro
-          if (!data.clientes || !data.gastos) {
-              throw new Error("El archivo no parece ser un backup válido de AutonoMe.");
-          }
-
-          const mensaje = `¿Estás seguro? Se borrarán los datos actuales y se cargarán:\n` +
-                          `- ${data.clientes.length} Clientes\n` +
-                          `- ${data.gastos.length} Gastos\n` +
-                          `- ${data.facturas ? data.facturas.length : 0} Facturas`;
-
-          if (confirm(mensaje)) {
-              // Ejecutamos todo en una transacción atómica
-              await db.transaction('rw', db.clientes, db.gastos, db.facturas, async () => {
-                  // Limpiar tablas actuales
-                  await db.clientes.clear();
-                  await db.gastos.clear();
-                  await db.facturas.clear();
-
-                  // Insertar datos del JSON
-                  if (data.clientes.length) await db.clientes.bulkAdd(data.clientes);
-                  if (data.gastos.length) await db.gastos.bulkAdd(data.gastos);
-                  if (data.facturas && data.facturas.length) await db.facturas.bulkAdd(data.facturas);
-              });
-
-              alert("¡Datos restaurados con éxito!");
-              location.reload(); // Recargamos para refrescar todas las tablas
-          }
-      } catch (err) {
-          console.error(err);
-          alert("Error al importar: " + err.message);
-      }
-  };
-  reader.readAsText(file);
-  // Limpiar el input para poder volver a subir el mismo archivo si se desea
-  input.value = '';
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (confirm("¿Restaurar backup? Se borrarán los datos actuales.")) {
+                await db.transaction('rw', db.clientes, db.gastos, db.facturas, async () => {
+                    await db.clientes.clear();
+                    await db.gastos.clear();
+                    await db.facturas.clear();
+                    if (data.clientes) await db.clientes.bulkAdd(data.clientes);
+                    if (data.gastos) await db.gastos.bulkAdd(data.gastos);
+                    if (data.facturas) await db.facturas.bulkAdd(data.facturas);
+                });
+                alert("Restaurado. La página se recargará.");
+                location.reload();
+            }
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    };
+    reader.readAsText(file);
 }
 
 // 3. Gestión de Clientes (CRUD con UUID)
