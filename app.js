@@ -35,10 +35,11 @@ function toggleTheme() {
 // 5. Backup (Función básica inicial)
 async function exportarTodo() {
   const datos = {
-      clientes: await db.clientes.toArray(),
-      gastos: await db.gastos.toArray(),
-      facturas: await db.facturas.toArray(), // Incluimos facturas
-      fechaExportacion: new Date().toISOString()
+    clientes: await db.clientes.toArray(),
+    gastos: await db.gastos.toArray(),
+    facturas: await db.facturas.toArray(),
+    config: await db.config.toArray(), // <--- AÑADIR ESTO
+    fecha: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(datos, null, 2)], {type: 'application/json'});
   const url = URL.createObjectURL(blob);
@@ -47,52 +48,6 @@ async function exportarTodo() {
   a.download = `autonome_backup_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
 }
-
-// async function importarTodo(input) {
-//   const file = input.files[0];
-//   if (!file) return;
-
-//   const reader = new FileReader();
-//   reader.onload = async (e) => {
-//       try {
-//           const data = JSON.parse(e.target.result);
-
-//           // Verificación básica de que el archivo es nuestro
-//           if (!data.clientes || !data.gastos) {
-//               throw new Error("El archivo no parece ser un backup válido de AutonoMe.");
-//           }
-
-//           const mensaje = `¿Estás seguro? Se borrarán los datos actuales y se cargarán:\n` +
-//                           `- ${data.clientes.length} Clientes\n` +
-//                           `- ${data.gastos.length} Gastos\n` +
-//                           `- ${data.facturas ? data.facturas.length : 0} Facturas`;
-
-//           if (confirm(mensaje)) {
-//               // Ejecutamos todo en una transacción atómica
-//               await db.transaction('rw', db.clientes, db.gastos, db.facturas, async () => {
-//                   // Limpiar tablas actuales
-//                   await db.clientes.clear();
-//                   await db.gastos.clear();
-//                   await db.facturas.clear();
-
-//                   // Insertar datos del JSON
-//                   if (data.clientes.length) await db.clientes.bulkAdd(data.clientes);
-//                   if (data.gastos.length) await db.gastos.bulkAdd(data.gastos);
-//                   if (data.facturas && data.facturas.length) await db.facturas.bulkAdd(data.facturas);
-//               });
-
-//               alert("¡Datos restaurados con éxito!");
-//               location.reload(); // Recargamos para refrescar todas las tablas
-//           }
-//       } catch (err) {
-//           console.error(err);
-//           alert("Error al importar: " + err.message);
-//       }
-//   };
-//   reader.readAsText(file);
-//   // Limpiar el input para poder volver a subir el mismo archivo si se desea
-//   input.value = '';
-// }
 
 const inputImport = document.getElementById('import-file');
 if (inputImport) {
@@ -115,9 +70,11 @@ async function importarTodo(input) {
                     await db.clientes.clear();
                     await db.gastos.clear();
                     await db.facturas.clear();
+                    await db.config.clear();
                     if (data.clientes) await db.clientes.bulkAdd(data.clientes);
                     if (data.gastos) await db.gastos.bulkAdd(data.gastos);
                     if (data.facturas) await db.facturas.bulkAdd(data.facturas);
+                    if (data.config) await db.config.bulkAdd(data.config);
                 });
                 alert("Restaurado. La página se recargará.");
                 location.reload();
@@ -291,3 +248,59 @@ function prepararNuevoCliente() {
   document.querySelector('#tab-form-cliente h2').innerText = "Nuevo Cliente";
   showTab('form-cliente');
 }
+
+// --- GESTIÓN DEL PERFIL (CONFIG) ---
+const formPerfil = document.getElementById('form-perfil');
+
+// Guardar datos del perfil
+if (formPerfil) {
+    formPerfil.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const perfil = {
+            id: 'mi-perfil', // ID fijo para que solo haya uno
+            nombre: document.getElementById('p-nombre').value,
+            nif: document.getElementById('p-nif').value,
+            email: document.getElementById('p-email').value,
+            calle: document.getElementById('p-calle').value,
+            cp: document.getElementById('p-cp').value,
+            ciudad: document.getElementById('p-ciudad').value,
+            provincia: document.getElementById('p-provincia').value
+        };
+        await db.config.put(perfil); // 'put' guarda o sobrescribe
+        alert("Perfil actualizado");
+    });
+}
+
+// Cargar datos del perfil al iniciar o entrar en configuración
+async function cargarPerfil() {
+    const p = await db.config.get('mi-perfil');
+    if (p) {
+        document.getElementById('p-nombre').value = p.nombre || "";
+        document.getElementById('p-nif').value = p.nif || "";
+        document.getElementById('p-email').value = p.email || "";
+        document.getElementById('p-calle').value = p.calle || "";
+        document.getElementById('p-cp').value = p.cp || "";
+        document.getElementById('p-ciudad').value = p.ciudad || "";
+        document.getElementById('p-provincia').value = p.provincia || "";
+    }
+}
+
+// Actualiza tu función showTab para cargar el perfil cuando se entre en ⚙️
+// Sustituye la parte de la navegación por esta:
+function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.display = 'none';
+    });
+
+    const activeTab = document.getElementById(`tab-${tabId}`);
+    activeTab.classList.add('active');
+    activeTab.style.display = 'block';
+
+    if (tabId === 'clientes') renderClientes();
+    if (tabId === 'gastos') renderGastos();
+    if (tabId === 'config') cargarPerfil(); // <--- NUEVO
+}
+
+// Y al final de app.js, llama a cargarPerfil para inicializarlo
+cargarPerfil();

@@ -122,22 +122,45 @@
         </section>
 
         <!-- PESTAÑA: CONFIGURACIÓN -->
+        <!-- En la sección id="tab-config" -->
         <section id="tab-config" class="tab-content">
-            <h2>Configuración</h2>
-            <article>
-                <label for="theme-switch">
-                    <input type="checkbox" id="theme-switch" role="switch" onclick="toggleTheme()">
-                    Modo Oscuro
-                </label>
-            </article>
-            <hr>
-            <div class="grid">
-                <button class="secondary" onclick="exportarTodo()">📤 Exportar Todo</button>
+            <h2>⚙️ Configuración</h2>
 
-                <!-- Input oculto para seleccionar el archivo -->
+            <h3>Datos de Facturación</h3>
+            <article>
+                <form id="form-perfil">
+                    <div class="grid">
+                        <label>Nombre Fiscal / Empresa <input type="text" id="p-nombre" required></label>
+                        <label>NIF / CIF <input type="text" id="p-nif" required></label>
+                    </div>
+                    <label>Email Profesional <input type="email" id="p-email"></label>
+
+                    <div class="grid">
+                        <label>Calle y Número <input type="text" id="p-calle"></label>
+                        <label>Código Postal <input type="text" id="p-cp"></label>
+                    </div>
+                    <div class="grid">
+                        <label>Ciudad <input type="text" id="p-ciudad"></label>
+                        <label>Provincia <input type="text" id="p-provincia"></label>
+                    </div>
+                    <button type="submit">Guardar mis datos</button>
+                </form>
+            </article>
+
+            <hr>
+            <h3>Respaldo de Seguridad</h3>
+            <div class="grid">
+                <button class="secondary" onclick="exportarTodo()">📤 Exportar Backup</button>
                 <input type="file" id="import-file" style="display:none" accept=".json">
-                <button class="secondary" onclick="document.getElementById('import-file').click()">📥 Importar Todo</button>
+                <button class="secondary" onclick="document.getElementById('import-file').click()">📥 Importar Backup</button>
             </div>
+
+            <hr>
+            <h3>Apariencia</h3>
+            <label for="theme-switch">
+                <input type="checkbox" id="theme-switch" role="switch" onclick="toggleTheme()">
+                Modo Oscuro
+            </label>
         </section>
     </main>
 
