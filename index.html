@@ -52,7 +52,7 @@
         <section id="tab-gastos" class="tab-content">
             <header class="grid">
                 <h2>Control de Gastos</h2>
-                <button onclick="showTab('form-gasto')"> + Registrar Gasto</button>
+                <button onclick="prepararNuevoGasto()"> + Registrar Gasto</button>
             </header>
             <table role="grid">
                 <thead>
@@ -72,6 +72,7 @@
         <section id="tab-form-gasto" class="tab-content">
             <h2>Nuevo Gasto / Compra</h2>
             <form id="form-gasto">
+                <input type="hidden" id="g-id-edit">
                 <div class="grid">
                     <label>Fecha <input type="date" id="g-fecha" required></label>
                     <label>Categoría

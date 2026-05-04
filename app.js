@@ -25,77 +25,30 @@ function showTab(tabId) {
     if (tabId === 'gastos') renderGastos();
 }
 
-// 3. Gestión de Clientes (CRUD con UUID)
-const formCliente = document.getElementById('form-cliente');
-
-formCliente.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const nuevoCliente = {
-        id: crypto.randomUUID(), // Identificador único universal
-        nombre: document.getElementById('c-nombre').value,
-        nif: document.getElementById('c-nif').value,
-        email: document.getElementById('c-email').value,
-        direccion: document.getElementById('c-direccion').value
-    };
-
-    try {
-        await db.clientes.add(nuevoCliente);
-        formCliente.reset();
-        showTab('clientes'); // Volver al listado
-    } catch (error) {
-        alert("Error al guardar el cliente: " + error);
-    }
-});
-
-async function renderClientes() {
-  const todos = await db.clientes.toArray();
-  const cuerpo = document.getElementById('lista-clientes');
-  cuerpo.innerHTML = todos.map(c => `
-      <tr>
-          <td>${c.nombre}</td>
-          <td>${c.nif}</td>
-          <td>
-              <div class="grid">
-                  <button class="outline" onclick="editarCliente('${c.id}')">✏️</button>
-                  <button class="outline secondary" onclick="borrarCliente('${c.id}')">🗑️</button>
-              </div>
-          </td>
-      </tr>
-  `).join('');
-}
-
-async function borrarCliente(id) {
-    if(confirm('¿Borrar cliente?')) {
-        await db.clientes.delete(id);
-        renderClientes();
-    }
-}
-
 // 4. Modo Claro/Oscuro
 function toggleTheme() {
-    const html = document.documentElement;
-    const current = html.getAttribute('data-theme');
-    html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
 }
 
 // 5. Backup (Función básica inicial)
 async function exportarTodo() {
-    const datos = {
-        clientes: await db.clientes.toArray(),
-        facturas: await db.facturas.toArray(),
-        gastos: await db.gastos.toArray()
-    };
-    const blob = new Blob([JSON.stringify(datos, null, 2)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'autonome_backup.json';
-    a.click();
+  const datos = {
+      clientes: await db.clientes.toArray(),
+      facturas: await db.facturas.toArray(),
+      gastos: await db.gastos.toArray()
+  };
+  const blob = new Blob([JSON.stringify(datos, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'autonome_backup.json';
+  a.click();
 }
 
-// --- GESTIÓN DE GASTOS ---
-const formGasto = document.getElementById('form-gasto');
+// 3. Gestión de Clientes (CRUD con UUID)
+const formCliente = document.getElementById('form-cliente');
 
 formCliente.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -125,22 +78,102 @@ formCliente.addEventListener('submit', async (e) => {
   showTab('clientes');
 });
 
+async function renderClientes() {
+  const todos = await db.clientes.toArray();
+  const cuerpo = document.getElementById('lista-clientes');
+  cuerpo.innerHTML = todos.map(c => `
+      <tr>
+          <td>${c.nombre}</td>
+          <td>${c.nif}</td>
+          <td>
+              <div class="grid">
+                  <button class="outline" onclick="editarCliente('${c.id}')">✏️</button>
+                  <button class="outline secondary" onclick="borrarCliente('${c.id}')">🗑️</button>
+              </div>
+          </td>
+      </tr>
+  `).join('');
+}
+
+async function borrarCliente(id) {
+    if(confirm('¿Borrar cliente?')) {
+        await db.clientes.delete(id);
+        renderClientes();
+    }
+}
+
+// --- GESTIÓN DE GASTOS ---
+const formGasto = document.getElementById('form-gasto');
+
+formGasto.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const idEdit = document.getElementById('g-id-edit').value;
+  const gastoData = {
+      fecha: document.getElementById('g-fecha').value,
+      categoria: document.getElementById('g-categoria').value,
+      concepto: document.getElementById('g-concepto').value,
+      base: parseFloat(document.getElementById('g-base').value),
+      iva: parseFloat(document.getElementById('g-iva').value)
+  };
+
+  if (idEdit) {
+      await db.gastos.update(idEdit, gastoData);
+  } else {
+      gastoData.id = crypto.randomUUID();
+      await db.gastos.add(gastoData);
+  }
+
+  formGasto.reset();
+  document.getElementById('g-id-edit').value = "";
+  showTab('gastos');
+});
+
+// FUNCIÓN PARA CARGAR EL GASTO EN EL FORMULARIO
+async function editarGasto(id) {
+  const g = await db.gastos.get(id);
+  if (!g) return;
+
+  document.getElementById('g-id-edit').value = g.id;
+  document.getElementById('g-fecha').value = g.fecha;
+  document.getElementById('g-categoria').value = g.categoria;
+  document.getElementById('g-concepto').value = g.concepto;
+  document.getElementById('g-base').value = g.base;
+  document.getElementById('g-iva').value = g.iva;
+
+  showTab('form-gasto');
+  document.querySelector('#tab-form-gasto h2').innerText = "Editar Gasto";
+}
+
+// FUNCIÓN PARA LIMPIAR ANTES DE CREAR NUEVO
+function prepararNuevoGasto() {
+  formGasto.reset();
+  document.getElementById('g-id-edit').value = "";
+  document.querySelector('#tab-form-gasto h2').innerText = "Nuevo Gasto";
+  showTab('form-gasto');
+}
+
 async function renderGastos() {
-    const todos = await db.gastos.orderBy('fecha').reverse().toArray();
-    const cuerpo = document.getElementById('lista-gastos');
-    cuerpo.innerHTML = todos.map(g => {
-        const total = (g.base * (1 + g.iva/100)).toFixed(2);
-        return `
-            <tr>
-                <td>${g.fecha}</td>
-                <td>${g.concepto}</td>
-                <td><mark>${g.categoria}</mark></td>
-                <td><strong>${total}€</strong></td>
-                <td>
-                    <button class="outline secondary" onclick="borrarGasto('${g.id}')">🗑️</button>
-                </td>
-            </tr>`;
-    }).join('');
+  const todos = await db.gastos.orderBy('fecha').reverse().toArray();
+  const cuerpo = document.getElementById('lista-gastos');
+  if (!cuerpo) return;
+
+  cuerpo.innerHTML = todos.map(g => {
+      const total = (g.base * (1 + g.iva/100)).toFixed(2);
+      return `
+          <tr>
+              <td>${g.fecha}</td>
+              <td>${g.concepto}</td>
+              <td><mark>${g.categoria}</mark></td>
+              <td><strong>${total}€</strong></td>
+              <td>
+                  <div class="grid">
+                      <button class="outline" onclick="editarGasto('${g.id}')" style="padding: 0 5px;">✏️</button>
+                      <button class="outline secondary" onclick="borrarGasto('${g.id}')" style="padding: 0 5px;">🗑️</button>
+                  </div>
+              </td>
+          </tr>`;
+  }).join('');
 }
 
 async function borrarGasto(id) {
