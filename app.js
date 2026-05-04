@@ -49,17 +49,20 @@ formCliente.addEventListener('submit', async (e) => {
 });
 
 async function renderClientes() {
-    const todos = await db.clientes.toArray();
-    const cuerpo = document.getElementById('lista-clientes');
-    cuerpo.innerHTML = todos.map(c => `
-        <tr>
-            <td>${c.nombre}</td>
-            <td>${c.nif}</td>
-            <td>
-                <button class="outline secondary" onclick="borrarCliente('${c.id}')">🗑️</button>
-            </td>
-        </tr>
-    `).join('');
+  const todos = await db.clientes.toArray();
+  const cuerpo = document.getElementById('lista-clientes');
+  cuerpo.innerHTML = todos.map(c => `
+      <tr>
+          <td>${c.nombre}</td>
+          <td>${c.nif}</td>
+          <td>
+              <div class="grid">
+                  <button class="outline" onclick="editarCliente('${c.id}')">✏️</button>
+                  <button class="outline secondary" onclick="borrarCliente('${c.id}')">🗑️</button>
+              </div>
+          </td>
+      </tr>
+  `).join('');
 }
 
 async function borrarCliente(id) {
@@ -94,21 +97,32 @@ async function exportarTodo() {
 // --- GESTIÓN DE GASTOS ---
 const formGasto = document.getElementById('form-gasto');
 
-formGasto.addEventListener('submit', async (e) => {
-    e.preventDefault();
+formCliente.addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-    const nuevoGasto = {
-        id: crypto.randomUUID(),
-        fecha: document.getElementById('g-fecha').value,
-        categoria: document.getElementById('g-categoria').value,
-        concepto: document.getElementById('g-concepto').value,
-        base: parseFloat(document.getElementById('g-base').value),
-        iva: parseFloat(document.getElementById('g-iva').value)
-    };
+  const idEdit = document.getElementById('c-id-edit').value;
+  const clienteData = {
+      nombre: document.getElementById('c-nombre').value,
+      nif: document.getElementById('c-nif').value,
+      email: document.getElementById('c-email').value,
+      calle: document.getElementById('c-calle').value,
+      cp: document.getElementById('c-cp').value,
+      ciudad: document.getElementById('c-ciudad').value,
+      provincia: document.getElementById('c-provincia').value
+  };
 
-    await db.gastos.add(nuevoGasto);
-    formGasto.reset();
-    showTab('gastos');
+  if (idEdit) {
+      // ACTUALIZAR
+      await db.clientes.update(idEdit, clienteData);
+  } else {
+      // CREAR NUEVO
+      clienteData.id = crypto.randomUUID();
+      await db.clientes.add(clienteData);
+  }
+
+  formCliente.reset();
+  document.getElementById('c-id-edit').value = ""; // Limpiar ID de edición
+  showTab('clientes');
 });
 
 async function renderGastos() {
@@ -134,4 +148,31 @@ async function borrarGasto(id) {
         await db.gastos.delete(id);
         renderGastos();
     }
+}
+
+async function editarCliente(id) {
+  const c = await db.clientes.get(id);
+  if (!c) return;
+
+  // Rellenamos los campos
+  document.getElementById('c-id-edit').value = c.id;
+  document.getElementById('c-nombre').value = c.nombre;
+  document.getElementById('c-nif').value = c.nif;
+  document.getElementById('c-email').value = c.email || "";
+  document.getElementById('c-calle').value = c.calle || "";
+  document.getElementById('c-cp').value = c.cp || "";
+  document.getElementById('c-ciudad').value = c.ciudad || "";
+  document.getElementById('c-provincia').value = c.provincia || "";
+
+  // Cambiamos a la pestaña del formulario
+  showTab('form-cliente');
+  // Opcional: Cambiar el título del formulario para que el usuario sepa que edita
+  document.querySelector('#tab-form-cliente h2').innerText = "Editar Cliente";
+}
+
+function prepararNuevoCliente() {
+  formCliente.reset();
+  document.getElementById('c-id-edit').value = "";
+  document.querySelector('#tab-form-cliente h2').innerText = "Nuevo Cliente";
+  showTab('form-cliente');
 }

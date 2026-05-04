@@ -39,7 +39,7 @@
         <!-- PESTAÑA: CLIENTES -->
         <section id="tab-clientes" class="tab-content">
             <h2>Gestión de Clientes</h2>
-            <button onclick="showTab('form-cliente')"> + Añadir Cliente</button>
+            <button onclick="prepararNuevoCliente()"> + Añadir Cliente</button>
             <table role="grid">
                 <thead>
                     <tr><th>Nombre</th><th>NIF</th><th>Acciones</th></tr>
@@ -103,7 +103,16 @@
                 <input type="text" id="c-nombre" placeholder="Nombre Comercial" required>
                 <input type="text" id="c-nif" placeholder="NIF/CIF" required>
                 <input type="email" id="c-email" placeholder="Email de contacto">
-                <textarea id="c-direccion" placeholder="Dirección postal completa"></textarea>
+                <div class="grid">
+                    <label>Calle y Número <input type="text" id="c-calle" placeholder="Ej: Calle Mayor 1, 2B"></label>
+                    <label>Código Postal <input type="text" id="c-cp" placeholder="28001"></label>
+                </div>
+                <div class="grid">
+                    <label>Ciudad <input type="text" id="c-ciudad" placeholder="Madrid"></label>
+                    <label>Provincia <input type="text" id="c-provincia" placeholder="Madrid"></label>
+                </div>
+                <!-- Campo oculto para saber si estamos editando o creando -->
+                <input type="hidden" id="c-id-edit">
                 <div class="grid">
                     <button type="submit">Guardar Cliente</button>
                     <button type="button" class="secondary" onclick="showTab('clientes')">Cancelar</button>
