@@ -435,7 +435,7 @@ async function renderDashboard() {
     if ([1, 4, 7, 10].includes(mes)) {
         aviso = `⚠️ <strong>¡Mes de impuestos!</strong> Tienes hasta el día 20 para presentar el trimestre anterior.`;
     } else {
-        aviso = `📅 Periodo fiscal tranquilo. Próximas declaraciones en el mes ${mes < 4 ? '04' : mes < 7 ? '07' : mes < 10 ? '10' : '01'}.`;
+        aviso = `📅 Periodo fiscal tranquilo. Próximas declaraciones en el mes ${mes < 4 ? 'de abril' : mes < 7 ? 'de julio' : mes < 10 ? 'de octubre' : 'de enero'}.`;
     }
 
     document.getElementById('dash-alertas').innerHTML = aviso;
