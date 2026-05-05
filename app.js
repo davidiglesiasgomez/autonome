@@ -410,75 +410,56 @@ async function renderFacturas() {
                 <td>${f.cliente_snapshot.nombre}</td>
                 <td><strong>${total}€</strong></td>
                 <td>
-                    <button class="outline" onclick="exportarPDF('${f.id}')">📄 PDF</button>
-                    <button class="outline secondary" onclick="borrarFactura('${f.id}')">🗑️</button>
+                    <div class="grid">
+                        <button class="outline" onclick="editarFactura('${f.id}')" title="Editar">✏️</button>
+                        <button class="outline" onclick="exportarPDF('${f.id}')" title="PDF">📄</button>
+                        <button class="outline secondary" onclick="borrarFactura('${f.id}')" title="Borrar">🗑️</button>
+                    </div>
                 </td>
             </tr>`;
     }).join('');
 }
 
-// async function renderDashboard() {
-//     const facturas = await db.facturas.toArray();
-//     const gastos = await db.gastos.toArray();
-//     const perfil = await db.config.get('mi-perfil');
+async function editarFactura(id) {
+    const f = await db.facturas.get(id);
+    if (!f) return;
+
+    // 1. Rellenar el selector de clientes primero (si no, no podemos marcar el actual)
+    const clientes = await db.clientes.toArray();
+    const select = document.getElementById('f-cliente-select');
+    select.innerHTML = '<option value="">-- Selecciona un cliente --</option>' + 
+        clientes.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+
+    // 2. Rellenar los campos del formulario
+    document.getElementById('f-id-edit').value = f.id;
+    document.getElementById('f-numero').value = f.numero;
+    document.getElementById('f-fecha').value = f.fecha;
+    document.getElementById('f-concepto').value = f.concepto;
+    document.getElementById('f-base').value = f.base;
+    document.getElementById('f-iva').value = f.iva;
+    document.getElementById('f-irpf').value = f.irpf;
     
-//     const objetivoPorc = (perfil && perfil.objetivo_irpf) ? perfil.objetivo_irpf / 100 : 0.20;
+    // 3. Seleccionar el cliente original (usamos el ID guardado en el snapshot o el original)
+    // Nota: Si el cliente fue borrado de la lista general, esta opción no aparecerá 
+    // a menos que lo manejemos, pero para edición simple esto funciona:
+    select.value = f.cliente_snapshot.id;
 
-//     // 1. Cálculos de IVA
-//     const ivaCobrado = facturas.reduce((acc, f) => acc + (f.base * (f.iva / 100)), 0);
-//     const ivaPagado = gastos.reduce((acc, g) => {
-//         const porc = (g.porcentaje || 100) / 100;
-//         return acc + ((g.base * (g.iva / 100)) * porc);
-//     }, 0);
-
-//     // 2. Cálculos de IRPF (Lo que te han retenido en facturas)
-//     const irpfRetenido = facturas.reduce((acc, f) => acc + (f.base * (f.irpf / 100)), 0);
-
-//     // 3. Totales económicos
-//     const ingresosBrutos = facturas.reduce((acc, f) => acc + f.base, 0);
-//     const gastosDeducibles = gastos.reduce((acc, g) => acc + (g.base * ((g.porcentaje || 100) / 100)), 0);
+    // 4. Cambiar interfaz
+    showTab('form-factura');
+    document.querySelector('#tab-form-factura h2').innerText = "Editar Factura " + f.numero;
     
-//     // El "Sueldo Real" es: Base Cobrada - Gastos Reales - IRPF (que ya no tienes)
-//     const sueldoReal = ingresosBrutos - gastosDeducibles - irpfRetenido;
+    // 5. Recalcular el total visual
+    calcularTotalesFactura();
+}
 
-//     // Pintar en el Dashboard
-//     document.getElementById('dash-hucha-iva').innerText = (ivaCobrado - ivaPagado).toFixed(2) + "€";
-    
-//     // CÁLCULO DE RESERVA IRPF
-//     const reservaPreventiva = (ingresosBrutos * objetivoPorc) - irpfRetenido;
-    
-//     // Ajustamos el Sueldo Real para que descuente también esta reserva "invisible"
-//     const sueldoNetoSeguro = ingresosBrutos - gastosDeducibles - irpfRetenido - (reservaPreventiva > 0 ? reservaPreventiva : 0);
-
-//     // Pintar en el HTML
-//     document.getElementById('dash-hucha-irpf').innerHTML = `
-//         <span>${retencionesYaRealizadas.toFixed(2)}€</span>
-//         <div style="font-size: 0.7rem; color: #ffcc00; margin-top:5px;">
-//             Ahorro extra sugerido: ${(reservaPreventiva > 0 ? reservaPreventiva : 0).toFixed(2)}€
-//         </div>
-//     `;
-    
-//     document.getElementById('dash-sueldo-real').innerText = sueldoNetoSeguro.toFixed(2) + "€";
-
-//     // Los totales del primer bloque
-//     document.getElementById('dash-ingresos').innerText = ingresosBrutos.toFixed(2) + "€";
-//     document.getElementById('dash-gastos').innerText = gastosDeducibles.toFixed(2) + "€";
-//     document.getElementById('dash-resultado').innerText = (ingresosBrutos - gastosDeducibles).toFixed(2) + "€";
-
-//     // 2. Avisos de Calendario Fiscal
-//     const ahora = new Date();
-//     const mes = ahora.getMonth() + 1; // Enero es 1
-//     let aviso = "";
-
-//     // Lógica simple de trimestres (Modelos 303, 130)
-//     if ([1, 4, 7, 10].includes(mes)) {
-//         aviso = `⚠️ <strong>¡Mes de impuestos!</strong> Tienes hasta el día 20 para presentar el trimestre anterior.`;
-//     } else {
-//         aviso = `📅 Periodo fiscal tranquilo. Próximas declaraciones en el mes ${mes < 4 ? 'de abril' : mes < 7 ? 'de julio' : mes < 10 ? 'de octubre' : 'de enero'}.`;
-//     }
-
-//     document.getElementById('dash-alertas').innerHTML = aviso;    
-// }
+async function borrarFactura(id) {
+    if (confirm("¿Seguro que quieres eliminar esta factura?")) {
+        await db.facturas.delete(id);
+        renderFacturas();
+        // Si tienes el Dashboard abierto o lo usas, conviene refrescarlo
+        if (document.getElementById('tab-dash').style.display === 'block') renderDashboard();
+    }
+}
 
 async function renderDashboard() {
     // 1. Obtener datos de la DB
