@@ -71,7 +71,7 @@ async function exportarTodo() {
     clientes: await db.clientes.toArray(),
     gastos: await db.gastos.toArray(),
     facturas: await db.facturas.toArray(),
-    config: await db.config.toArray(), // <--- AÑADIR ESTO
+    config: await db.config.toArray(),
     fecha: new Date().toISOString()
   };
   const blob = new Blob([JSON.stringify(datos, null, 2)], {type: 'application/json'});
@@ -308,7 +308,8 @@ if (formPerfil) {
             calle: document.getElementById('p-calle').value,
             cp: document.getElementById('p-cp').value,
             ciudad: document.getElementById('p-ciudad').value,
-            provincia: document.getElementById('p-provincia').value
+            provincia: document.getElementById('p-provincia').value,
+            objetivoIrpf: document.getElementById('p-objetivo-irpf').value
         };
         await db.config.put(perfil); // 'put' guarda o sobrescribe
         alert("Perfil actualizado");
@@ -326,6 +327,7 @@ async function cargarPerfil() {
         document.getElementById('p-cp').value = p.cp || "";
         document.getElementById('p-ciudad').value = p.ciudad || "";
         document.getElementById('p-provincia').value = p.provincia || "";
+        document.getElementById('p-objetivo-irpf').value = p.objetivoIrpf || "20";
     }
 }
 
@@ -415,36 +417,122 @@ async function renderFacturas() {
     }).join('');
 }
 
+// async function renderDashboard() {
+//     const facturas = await db.facturas.toArray();
+//     const gastos = await db.gastos.toArray();
+//     const perfil = await db.config.get('mi-perfil');
+    
+//     const objetivoPorc = (perfil && perfil.objetivo_irpf) ? perfil.objetivo_irpf / 100 : 0.20;
+
+//     // 1. Cálculos de IVA
+//     const ivaCobrado = facturas.reduce((acc, f) => acc + (f.base * (f.iva / 100)), 0);
+//     const ivaPagado = gastos.reduce((acc, g) => {
+//         const porc = (g.porcentaje || 100) / 100;
+//         return acc + ((g.base * (g.iva / 100)) * porc);
+//     }, 0);
+
+//     // 2. Cálculos de IRPF (Lo que te han retenido en facturas)
+//     const irpfRetenido = facturas.reduce((acc, f) => acc + (f.base * (f.irpf / 100)), 0);
+
+//     // 3. Totales económicos
+//     const ingresosBrutos = facturas.reduce((acc, f) => acc + f.base, 0);
+//     const gastosDeducibles = gastos.reduce((acc, g) => acc + (g.base * ((g.porcentaje || 100) / 100)), 0);
+    
+//     // El "Sueldo Real" es: Base Cobrada - Gastos Reales - IRPF (que ya no tienes)
+//     const sueldoReal = ingresosBrutos - gastosDeducibles - irpfRetenido;
+
+//     // Pintar en el Dashboard
+//     document.getElementById('dash-hucha-iva').innerText = (ivaCobrado - ivaPagado).toFixed(2) + "€";
+    
+//     // CÁLCULO DE RESERVA IRPF
+//     const reservaPreventiva = (ingresosBrutos * objetivoPorc) - irpfRetenido;
+    
+//     // Ajustamos el Sueldo Real para que descuente también esta reserva "invisible"
+//     const sueldoNetoSeguro = ingresosBrutos - gastosDeducibles - irpfRetenido - (reservaPreventiva > 0 ? reservaPreventiva : 0);
+
+//     // Pintar en el HTML
+//     document.getElementById('dash-hucha-irpf').innerHTML = `
+//         <span>${retencionesYaRealizadas.toFixed(2)}€</span>
+//         <div style="font-size: 0.7rem; color: #ffcc00; margin-top:5px;">
+//             Ahorro extra sugerido: ${(reservaPreventiva > 0 ? reservaPreventiva : 0).toFixed(2)}€
+//         </div>
+//     `;
+    
+//     document.getElementById('dash-sueldo-real').innerText = sueldoNetoSeguro.toFixed(2) + "€";
+
+//     // Los totales del primer bloque
+//     document.getElementById('dash-ingresos').innerText = ingresosBrutos.toFixed(2) + "€";
+//     document.getElementById('dash-gastos').innerText = gastosDeducibles.toFixed(2) + "€";
+//     document.getElementById('dash-resultado').innerText = (ingresosBrutos - gastosDeducibles).toFixed(2) + "€";
+
+//     // 2. Avisos de Calendario Fiscal
+//     const ahora = new Date();
+//     const mes = ahora.getMonth() + 1; // Enero es 1
+//     let aviso = "";
+
+//     // Lógica simple de trimestres (Modelos 303, 130)
+//     if ([1, 4, 7, 10].includes(mes)) {
+//         aviso = `⚠️ <strong>¡Mes de impuestos!</strong> Tienes hasta el día 20 para presentar el trimestre anterior.`;
+//     } else {
+//         aviso = `📅 Periodo fiscal tranquilo. Próximas declaraciones en el mes ${mes < 4 ? 'de abril' : mes < 7 ? 'de julio' : mes < 10 ? 'de octubre' : 'de enero'}.`;
+//     }
+
+//     document.getElementById('dash-alertas').innerHTML = aviso;    
+// }
+
 async function renderDashboard() {
+    // 1. Obtener datos de la DB
     const facturas = await db.facturas.toArray();
     const gastos = await db.gastos.toArray();
+    const perfil = await db.config.get('mi-perfil');
+    
+    // 2. Parámetros de configuración
+    const objetivoPorc = (perfil && perfil.p_objetivo_irpf) ? perfil.p_objetivo_irpf / 100 : 0.20;
 
-    // 1. Cálculos de IVA
+    // --- CÁLCULOS DE IVA ---
     const ivaCobrado = facturas.reduce((acc, f) => acc + (f.base * (f.iva / 100)), 0);
     const ivaPagado = gastos.reduce((acc, g) => {
         const porc = (g.porcentaje || 100) / 100;
         return acc + ((g.base * (g.iva / 100)) * porc);
     }, 0);
+    const huchaIva = ivaCobrado - ivaPagado;
 
-    // 2. Cálculos de IRPF (Lo que te han retenido en facturas)
-    const irpfRetenido = facturas.reduce((acc, f) => acc + (f.base * (f.irpf / 100)), 0);
+    // --- CÁLCULOS DE IRPF (RETENCIONES Y RESERVA) ---
+    const baseTotalIngresos = facturas.reduce((acc, f) => acc + f.base, 0);
+    const retencionesYaRealizadas = facturas.reduce((acc, f) => acc + (f.base * (f.irpf / 100)), 0);
+    
+    // Cuánto deberías haber ahorrado según tu objetivo
+    const ahorroTotalTeorico = baseTotalIngresos * objetivoPorc;
+    // Cuánto te falta por ahorrar (si el resultado es positivo)
+    const faltaPorAhorrar = ahorroTotalTeorico - retencionesYaRealizadas;
+    const reservaPreventiva = faltaPorAhorrar > 0 ? faltaPorAhorrar : 0;
 
-    // 3. Totales económicos
-    const ingresosBrutos = facturas.reduce((acc, f) => acc + f.base, 0);
+    // --- CÁLCULOS DE BENEFICIO REAL ---
     const gastosDeducibles = gastos.reduce((acc, g) => acc + (g.base * ((g.porcentaje || 100) / 100)), 0);
+    const resultadoBruto = baseTotalIngresos - gastosDeducibles;
     
-    // El "Sueldo Real" es: Base Cobrada - Gastos Reales - IRPF (que ya no tienes)
-    const sueldoReal = ingresosBrutos - gastosDeducibles - irpfRetenido;
+    // El sueldo neto es lo que queda tras quitar gastos reales e impuestos (IVA + IRPF total objetivo)
+    const sueldoNetoSeguro = baseTotalIngresos - gastosDeducibles - retencionesYaRealizadas - reservaPreventiva;
 
-    // Pintar en el Dashboard
-    document.getElementById('dash-hucha-iva').innerText = (ivaCobrado - ivaPagado).toFixed(2) + "€";
-    document.getElementById('dash-hucha-irpf').innerText = irpfRetenido.toFixed(2) + "€";
-    document.getElementById('dash-sueldo-real').innerText = sueldoReal.toFixed(2) + "€";
+    // --- RENDERIZADO EN EL HTML ---
     
-    // Los totales del primer bloque
-    document.getElementById('dash-ingresos').innerText = ingresosBrutos.toFixed(2) + "€";
+    // Bloque Superior: Totales
+    document.getElementById('dash-ingresos').innerText = baseTotalIngresos.toFixed(2) + "€";
     document.getElementById('dash-gastos').innerText = gastosDeducibles.toFixed(2) + "€";
-    document.getElementById('dash-resultado').innerText = (ingresosBrutos - gastosDeducibles).toFixed(2) + "€";
+    document.getElementById('dash-resultado').innerText = resultadoBruto.toFixed(2) + "€";
+
+    // Bloque Inferior: Las Huchas
+    document.getElementById('dash-hucha-iva').innerText = huchaIva.toFixed(2) + "€";
+    
+    document.getElementById('dash-hucha-irpf').innerHTML = `
+        <span>${(retencionesYaRealizadas + reservaPreventiva).toFixed(2)}€</span>
+        <div style="font-size: 0.7rem; color: #ffcc00; margin-top:5px; font-weight: normal;">
+            Ya retenido: ${retencionesYaRealizadas.toFixed(2)}€<br>
+            Ahorro extra: ${reservaPreventiva.toFixed(2)}€
+        </div>
+    `;
+    
+    document.getElementById('dash-sueldo-real').innerText = sueldoNetoSeguro.toFixed(2) + "€";
 
     // 2. Avisos de Calendario Fiscal
     const ahora = new Date();
