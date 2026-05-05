@@ -48,6 +48,26 @@
                 </article>
             </div>
 
+            <hr>
+            <h3>💰 Cajas Virtuales (Impuestos a reservar)</h3>
+            <div class="grid">
+                <article style="border-left: 5px solid #ffcc00;">
+                    <small>Hucha del IVA (A pagar)</small>
+                    <h3 id="dash-hucha-iva">0.00€</h3>
+                    <p style="font-size: 0.7rem; opacity: 0.8;">IVA Cobrado - IVA Pagado</p>
+                </article>
+                <article style="border-left: 5px solid #ff5722;">
+                    <small>Hucha IRPF (Retenciones)</small>
+                    <h3 id="dash-hucha-irpf">0.00€</h3>
+                    <p style="font-size: 0.7rem; opacity: 0.8;">Adelantos a cuenta (Facturas)</p>
+                </article>
+                <article style="border-left: 5px solid #4caf50;">
+                    <small>Tu "Sueldo" Limpio</small>
+                    <h3 id="dash-sueldo-real">0.00€</h3>
+                    <p style="font-size: 0.7rem; opacity: 0.8;">Disponible tras impuestos</p>
+                </article>
+            </div>
+
             <article id="dash-alertas">
                 <!-- Aquí irán los avisos de Hacienda -->
             </article>
@@ -116,6 +136,16 @@
                 <div class="grid">
                     <label>Base Imponible (€) <input type="number" id="g-base" step="0.01" required></label>
                     <label>IVA (%) <input type="number" id="g-iva" value="21" step="1"></label>
+                    <!-- Dentro de tab-form-gasto, en la sección de Base e IVA -->
+                    <label>Deducción (%) 
+                        <select id="g-deduccion">
+                            <option value="100">100% (Gasto total)</option>
+                            <option value="50">50% (Uso compartido)</option>
+                            <option value="30">30% (Suministros hogar afecto)</option>
+                            <option value="15">15% (Otros parciales)</option>
+                            <option value="0">0% (No deducible)</option>
+                        </select>
+                    </label>                         
                 </div>
                 <div class="grid">
                     <button type="submit">Guardar Gasto</button>

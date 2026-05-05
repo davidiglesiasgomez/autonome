@@ -196,7 +196,8 @@ formGasto.addEventListener('submit', async (e) => {
       categoria: document.getElementById('g-categoria').value,
       concepto: document.getElementById('g-concepto').value,
       base: parseFloat(document.getElementById('g-base').value),
-      iva: parseFloat(document.getElementById('g-iva').value)
+      iva: parseFloat(document.getElementById('g-iva').value),
+      porcentaje: parseFloat(document.getElementById('g-deduccion').value) || 100 // Por defecto 100%
   };
 
   if (idEdit) {
@@ -418,13 +419,32 @@ async function renderDashboard() {
     const facturas = await db.facturas.toArray();
     const gastos = await db.gastos.toArray();
 
-    // 1. Cálculos rápidos (Totales)
-    const totalIngresos = facturas.reduce((acc, f) => acc + f.base, 0);
-    const totalGastos = gastos.reduce((acc, g) => acc + g.base, 0);
+    // 1. Cálculos de IVA
+    const ivaCobrado = facturas.reduce((acc, f) => acc + (f.base * (f.iva / 100)), 0);
+    const ivaPagado = gastos.reduce((acc, g) => {
+        const porc = (g.porcentaje || 100) / 100;
+        return acc + ((g.base * (g.iva / 100)) * porc);
+    }, 0);
 
-    document.getElementById('dash-ingresos').innerText = totalIngresos.toFixed(2) + "€";
-    document.getElementById('dash-gastos').innerText = totalGastos.toFixed(2) + "€";
-    document.getElementById('dash-resultado').innerText = (totalIngresos - totalGastos).toFixed(2) + "€";
+    // 2. Cálculos de IRPF (Lo que te han retenido en facturas)
+    const irpfRetenido = facturas.reduce((acc, f) => acc + (f.base * (f.irpf / 100)), 0);
+
+    // 3. Totales económicos
+    const ingresosBrutos = facturas.reduce((acc, f) => acc + f.base, 0);
+    const gastosDeducibles = gastos.reduce((acc, g) => acc + (g.base * ((g.porcentaje || 100) / 100)), 0);
+    
+    // El "Sueldo Real" es: Base Cobrada - Gastos Reales - IRPF (que ya no tienes)
+    const sueldoReal = ingresosBrutos - gastosDeducibles - irpfRetenido;
+
+    // Pintar en el Dashboard
+    document.getElementById('dash-hucha-iva').innerText = (ivaCobrado - ivaPagado).toFixed(2) + "€";
+    document.getElementById('dash-hucha-irpf').innerText = irpfRetenido.toFixed(2) + "€";
+    document.getElementById('dash-sueldo-real').innerText = sueldoReal.toFixed(2) + "€";
+    
+    // Los totales del primer bloque
+    document.getElementById('dash-ingresos').innerText = ingresosBrutos.toFixed(2) + "€";
+    document.getElementById('dash-gastos').innerText = gastosDeducibles.toFixed(2) + "€";
+    document.getElementById('dash-resultado').innerText = (ingresosBrutos - gastosDeducibles).toFixed(2) + "€";
 
     // 2. Avisos de Calendario Fiscal
     const ahora = new Date();
@@ -438,5 +458,5 @@ async function renderDashboard() {
         aviso = `📅 Periodo fiscal tranquilo. Próximas declaraciones en el mes ${mes < 4 ? 'de abril' : mes < 7 ? 'de julio' : mes < 10 ? 'de octubre' : 'de enero'}.`;
     }
 
-    document.getElementById('dash-alertas').innerHTML = aviso;
+    document.getElementById('dash-alertas').innerHTML = aviso;    
 }
