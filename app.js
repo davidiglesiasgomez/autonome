@@ -31,30 +31,25 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Navegación entre pestañas
-// Actualiza tu función showTab para cargar el perfil cuando se entre en ⚙️
-// Sustituye la parte de la navegación por esta:
+// Actualiza showTab para incluir el dashboard
 function showTab(tabId) {
-  // 1. Guardar la pestaña actual para el futuro
-  localStorage.setItem('activeTab', tabId);
+    localStorage.setItem('activeTab', tabId);
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.display = 'none';
+    });
 
-  // 2. Ocultar todas
-  document.querySelectorAll('.tab-content').forEach(tab => {
-      tab.classList.remove('active');
-      tab.style.display = 'none';
-  });
+    const activeTab = document.getElementById(`tab-${tabId}`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+        activeTab.style.display = 'block';
+    }
 
-  // 3. Mostrar la actual
-  const activeTab = document.getElementById(`tab-${tabId}`);
-  if (activeTab) {
-      activeTab.classList.add('active');
-      activeTab.style.display = 'block';
-  }
-
-  // 4. Cargar datos automáticamente
-  if (tabId === 'facturas') renderFacturas();
-  if (tabId === 'clientes') renderClientes();
-  if (tabId === 'gastos') renderGastos();
-  if (tabId === 'config') cargarPerfil();
+    if (tabId === 'dash') renderDashboard(); // <--- NUEVO
+    if (tabId === 'facturas') renderFacturas();
+    if (tabId === 'clientes') renderClientes();
+    if (tabId === 'gastos') renderGastos();
+    if (tabId === 'config') cargarPerfil();
 }
 
 // Y al final de app.js, llama a cargarPerfil para inicializarlo
@@ -103,28 +98,38 @@ async function importarTodo(input) {
     reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
+            
             if (confirm("¿Restaurar backup? Se borrarán los datos actuales.")) {
-                await db.transaction('rw', db.clientes, db.gastos, db.facturas, async () => {
-                    await db.clientes.clear();
-                    await db.gastos.clear();
-                    await db.facturas.clear();
-                    await db.config.clear();
+                // FORZAMOS LA APERTURA para que Dexie cree las tablas si no existen
+                await db.open(); 
+
+                await db.transaction('rw', db.clientes, db.gastos, db.facturas, db.config, async () => {
+                    // Limpiamos con seguridad
+                    await Promise.all([
+                        db.clientes.clear(),
+                        db.gastos.clear(),
+                        db.facturas.clear(),
+                        db.config.clear()
+                    ]);
+
                     if (data.clientes) await db.clientes.bulkAdd(data.clientes);
                     if (data.gastos) await db.gastos.bulkAdd(data.gastos);
                     if (data.facturas) await db.facturas.bulkAdd(data.facturas);
                     if (data.config) await db.config.bulkAdd(data.config);
                 });
-                alert("Restaurado. La página se recargará.");
+                
+                alert("Restaurado con éxito.");
                 location.reload();
             }
         } catch (err) {
-            alert("Error: " + err.message);
+            console.error(err);
+            alert("Error crítico al importar. Asegúrate de que el archivo es correcto.");
         }
     };
     reader.readAsText(file);
 }
 
-// 3. Gestión de Clientes (CRUD con UUID)
+// Gestión de Clientes (CRUD con UUID)
 const formCliente = document.getElementById('form-cliente');
 
 formCliente.addEventListener('submit', async (e) => {
@@ -407,4 +412,31 @@ async function renderFacturas() {
                 </td>
             </tr>`;
     }).join('');
+}
+
+async function renderDashboard() {
+    const facturas = await db.facturas.toArray();
+    const gastos = await db.gastos.toArray();
+
+    // 1. Cálculos rápidos (Totales)
+    const totalIngresos = facturas.reduce((acc, f) => acc + f.base, 0);
+    const totalGastos = gastos.reduce((acc, g) => acc + g.base, 0);
+
+    document.getElementById('dash-ingresos').innerText = totalIngresos.toFixed(2) + "€";
+    document.getElementById('dash-gastos').innerText = totalGastos.toFixed(2) + "€";
+    document.getElementById('dash-resultado').innerText = (totalIngresos - totalGastos).toFixed(2) + "€";
+
+    // 2. Avisos de Calendario Fiscal
+    const ahora = new Date();
+    const mes = ahora.getMonth() + 1; // Enero es 1
+    let aviso = "";
+
+    // Lógica simple de trimestres (Modelos 303, 130)
+    if ([1, 4, 7, 10].includes(mes)) {
+        aviso = `⚠️ <strong>¡Mes de impuestos!</strong> Tienes hasta el día 20 para presentar el trimestre anterior.`;
+    } else {
+        aviso = `📅 Periodo fiscal tranquilo. Próximas declaraciones en el mes ${mes < 4 ? '04' : mes < 7 ? '07' : mes < 10 ? '10' : '01'}.`;
+    }
+
+    document.getElementById('dash-alertas').innerHTML = aviso;
 }

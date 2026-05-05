@@ -16,10 +16,11 @@
     <nav class="container">
         <ul>
             <li>
-              <strong style="cursor:pointer" onclick="location.reload()">🚀 AutonoMe</strong>
+              <strong style="cursor:pointer" onclick="showTab('dash')">🚀 AutonoMe</strong>              
             </li>
           </ul>
         <ul>
+            <li><a href="#" onclick="showTab('dash')">Dashboard</a></li>
             <li><a href="#" onclick="showTab('facturas')">Facturas</a></li>
             <li><a href="#" onclick="showTab('clientes')">Clientes</a></li>
             <li><a href="#" onclick="showTab('gastos')">Gastos</a></li>
@@ -28,6 +29,30 @@
     </nav>
 
     <main class="container">
+
+        <!-- PESTAÑA: DASHBOARD -->
+        <section id="tab-dash" class="tab-content active">
+            <h2>Resumen de Actividad</h2>
+            <div class="grid">
+                <article>
+                    <small>Ventas (Trimestre)</small>
+                    <h3 id="dash-ingresos">0.00€</h3>
+                </article>
+                <article>
+                    <small>Gastos (Trimestre)</small>
+                    <h3 id="dash-gastos" style="color: var(--del-color)">0.00€</h3>
+                </article>
+                <article>
+                    <small>Resultado</small>
+                    <h3 id="dash-resultado">0.00€</h3>
+                </article>
+            </div>
+
+            <article id="dash-alertas">
+                <!-- Aquí irán los avisos de Hacienda -->
+            </article>
+        </section>
+
         <!-- PESTAÑA: FACTURAS -->
         <section id="tab-facturas" class="tab-content active">
             <h2>Facturas</h2>
